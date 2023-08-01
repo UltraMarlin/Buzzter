@@ -15,6 +15,15 @@ const io = new Server(server, {
     },
 });
 
+// Can join specific rooms through socket.io
+io.on("connection", (socket) => {
+    console.log(`User Connected: ${socket.id}`);
+
+    socket.on("send_message", (data) => {
+        socket.broadcast.emit("receive_message", data);
+    })
+});
+
 const PORT = 3001;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
