@@ -75,8 +75,17 @@ io.on("connection", (socket) => {
       console.log(getUsersInRoom(user.room));
     });
 
-    socket.on('buzzer_press', ({ room, username }) => {
-      console.log(`${username} pressed the buzzer in room ${room}!`)
+    socket.on('buzzer_press', () => {
+      const user = getUser(socket.id);
+
+      if (user) {
+        io.to(user.room).emit('buzzer_was_pressed', {
+          name: user.name
+        });
+
+        console.log(`${user.name} pressed the buzzer in room ${user.room}!`)
+      }
+      
     });
 
     socket.on('disconnect', () => {
@@ -100,3 +109,4 @@ const PORT = 3001;
 server.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
+
