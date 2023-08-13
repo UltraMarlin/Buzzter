@@ -7,13 +7,13 @@ import socketIOClient from 'socket.io-client';
 const ENDPOINT = 'http://localhost:3001';
 
 function App() {
-  // Input fields
   const socketRef = useRef();
   const [username, setUsername] = useState("");
   const [roomID, setRoomID] = useState("");
-  // Internal State
   const [connectedRoom, setConnectedRoom] = useState(null);
   const [connectedUsers, setConnectedUsers] = useState([]);
+  const [buzzerPressedBy, setBuzzerPressedBy] = useState("");
+  const [textField, setTextField] = useState("");
 
   const handleBuzzerPress = () => {
     socketRef.current.emit("buzzer_press", { room: connectedRoom, username });
@@ -23,10 +23,18 @@ function App() {
     socketRef.current.emit("connect_to_room", { room: roomID, username });
   }
 
+  const isMyTurn = () => {
+    return buzzerPressedBy === username.toLowerCase();
+  }
+
   const handleSubmit = (e) => {
     e.preventDefault();
     connectUserToRoom();
   }
+
+  useEffect(() => {
+    socketRef.current?.emit("textfield_update", { text: textField });
+  }, [textField]);
 
   useEffect(() => {
     socketRef.current = socketIOClient(ENDPOINT);
@@ -34,6 +42,14 @@ function App() {
     socketRef.current.on("room_update", (data) => {
       setConnectedRoom(data.room);
       setConnectedUsers(data.users);
+    });
+
+    socketRef.current.on("buzzer_was_pressed", (name) => {
+      setBuzzerPressedBy(name);
+    });
+
+    socketRef.current.on("buzzer_was_freed", () => {
+      setBuzzerPressedBy("");
     });
   }, []);
 
@@ -48,8 +64,11 @@ function App() {
       
       {connectedRoom ? (
         <>
-          <h1>Welcome to Room {connectedRoom}</h1>
-          <button className="buzzerButton" onClick={handleBuzzerPress}>Buzzer</button>
+          <h1>Welcome to Room {connectedRoom}, {username}!</h1>
+          <button className={"buzzerButton" + (buzzerPressedBy && (isMyTurn() ? " green-bg" : " red-bg"))} onClick={handleBuzzerPress} disabled={buzzerPressedBy}>
+            {buzzerPressedBy ? `Buzzer pressed\nby ${isMyTurn() ? "you" : buzzerPressedBy}` : "Buzzer ready"}
+          </button>
+          <input type="text" name='textField' placeholder='Answer...' value={textField} onChange={(e) => setTextField(e.target.value)} />
           <div>
             <h2>Connected Users:</h2>
             {renderActiveUsers()}
@@ -59,7 +78,7 @@ function App() {
         <>
           <h1>Connect to Room</h1>
           <form onSubmit={handleSubmit}>
-            <input type="text" name='roomID' placeholder='Room Number...' value={roomID} onChange={(e) => setRoomID(e.target.value)} />
+            <input id="testo" type="text" name='roomID' placeholder='Room Number...' value={roomID} onChange={(e) => setRoomID(e.target.value)} />
             <input type="text" name='username' placeholder='Username...' value={username} onChange={(e) => setUsername(e.target.value)} />
             <input type="submit" value='Connect'/>
           </form>

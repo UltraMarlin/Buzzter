@@ -3,6 +3,7 @@ const app = express();
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+require('dotenv').config();
 
 app.use(cors());
 
@@ -15,9 +16,11 @@ const io = new Server(server, {
     },
 });
 
+const ADMIN_SECRET = process.env.ADMIN_SECRET;
+
 const users = [];
 
-const addUser = ({ id, name, room }) => {
+const addUser = ({ id, name, room, isAdmin }) => {
   name = name.trim().toLowerCase();
   room = room.trim().toLowerCase();
 
@@ -33,7 +36,7 @@ const addUser = ({ id, name, room }) => {
   if (existingUser) return { error: 'Username already exists.' };
   if (existingId) return { error: 'Id already connected.' };
 
-  const user = { id, name, room };
+  const user = { id, name, room, isAdmin };
 
   users.push(user);
 
@@ -42,7 +45,6 @@ const addUser = ({ id, name, room }) => {
 
 const removeUser = id => {
   const index = users.findIndex(user => user.id === id);
-
   if (index !== -1) return users.splice(index, 1)[0];
 };
 
@@ -50,12 +52,46 @@ const getUser = id => users.find(user => user.id === id);
 
 const getUsersInRoom = room => users.filter(user => user.room === room);
 
+const buzzerStates = [];
+
+const getBuzzerState = room => buzzerStates.find(buzzerState => buzzerState.room === room);
+
+const addBuzzerState = ({ room, pressed=false }) => {
+  if (getBuzzerState(room)) return { error: 'Room already initialized.' };
+
+  const buzzerState = { room, pressed };
+
+  buzzerStates.push(buzzerState);
+}
+
+const updateBuzzerState = ({ room, pressed }) => {
+  if (!getBuzzerState(room)) {
+    addBuzzerState({room, pressed});
+    return;
+  }
+
+  let buzzerState = removeBuzzerState(room);
+  buzzerState.pressed = pressed;
+
+  addBuzzerState(buzzerState);
+
+  console.log(buzzerStates);
+
+  return { buzzerState };
+}
+
+const removeBuzzerState = room => {
+  const index = buzzerStates.findIndex(buzzerState => buzzerState.room === room);
+  if (index !== -1) return buzzerStates.splice(index, 1)[0];
+}
+
 // Can join specific rooms through socket.io
 io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`);
 
-    socket.on('connect_to_room', ({ room, username }) => {
-      const { error, user } = addUser({ id: socket.id, name: username, room }); // add user with socket id and room info
+    socket.on('connect_to_room', ({ room, username, secret = "_" }) => {
+      const isAdmin = secret === ADMIN_SECRET;
+      const { error, user } = addUser({ id: socket.id, name: username, room, isAdmin }); // add user with socket id and room info
       
       if (error) {
         console.log(error);
@@ -63,6 +99,8 @@ io.on("connection", (socket) => {
       }
 
       socket.join(user.room);
+
+      addBuzzerState({ room: user.room, pressed: false });
   
       io.to(user.room).emit('room_update', {
         room: user.room,
@@ -79,19 +117,50 @@ io.on("connection", (socket) => {
       const user = getUser(socket.id);
 
       if (user) {
-        io.to(user.room).emit('buzzer_was_pressed', {
-          name: user.name
-        });
-
-        console.log(`${user.name} pressed the buzzer in room ${user.room}!`)
+        const buzzerState = getBuzzerState(user.room);
+        if (buzzerState?.pressed) return;
+        updateBuzzerState({ room: user.room, pressed: true });
+        io.to(user.room).emit('buzzer_was_pressed', user.name);
+        console.log(`${user.name} pressed the buzzer in room ${user.room}!`);
       }
-      
+    });
+
+    socket.on('free_buzzer', () => {
+      const user = getUser(socket.id);
+
+      if (user && user.isAdmin) {
+        io.to(user.room).emit('buzzer_was_freed');
+        updateBuzzerState({ room: user.room, pressed: false });
+        console.log("Buzzer freed.");
+      }
+    });
+
+    socket.on('textfield_update', ({ text }) => {
+      const user = getUser(socket.id);
+
+      if (user) {
+        const usersInRoom = getUsersInRoom(user.room);
+        usersInRoom.forEach(roomUser => {
+          if (roomUser.isAdmin) {
+            io.to(roomUser.id).emit('textfield_update_from', {
+              name: user.name,
+              text: text
+            });
+          }
+        });
+      }
     });
 
     socket.on('disconnect', () => {
       const user = removeUser(socket.id);
     
       if (user) {
+        if (getUsersInRoom(user.room).length == 0) {
+          console.log(`Last user left room ${user.room}, removing buzzerState entry.`);
+          removeBuzzerState(user.room);
+          console.log(buzzerStates);
+        }
+
         io.to(user.room).emit('room_update', {
           room: user.room,
           users: getUsersInRoom(user.room)
