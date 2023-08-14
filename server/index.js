@@ -11,7 +11,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: process.env.ORIGIN,
         methods: ["GET", "POST"],
     },
 });
@@ -56,22 +56,23 @@ const buzzerStates = [];
 
 const getBuzzerState = room => buzzerStates.find(buzzerState => buzzerState.room === room);
 
-const addBuzzerState = ({ room, pressed=false }) => {
+const addBuzzerState = ({ room, pressed=false, name="" }) => {
   if (getBuzzerState(room)) return { error: 'Room already initialized.' };
 
-  const buzzerState = { room, pressed };
+  const buzzerState = { room, pressed, name };
 
   buzzerStates.push(buzzerState);
 }
 
-const updateBuzzerState = ({ room, pressed }) => {
+const updateBuzzerState = ({ room, pressed, name }) => {
   if (!getBuzzerState(room)) {
-    addBuzzerState({room, pressed});
+    addBuzzerState({room, pressed, name});
     return;
   }
 
   let buzzerState = removeBuzzerState(room);
   buzzerState.pressed = pressed;
+  buzzerState.name = name;
 
   addBuzzerState(buzzerState);
 
@@ -85,13 +86,12 @@ const removeBuzzerState = room => {
   if (index !== -1) return buzzerStates.splice(index, 1)[0];
 }
 
-// Can join specific rooms through socket.io
 io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`);
 
     socket.on('connect_to_room', ({ room, username, secret = "_" }) => {
       const isAdmin = secret === ADMIN_SECRET;
-      const { error, user } = addUser({ id: socket.id, name: username, room, isAdmin }); // add user with socket id and room info
+      const { error, user } = addUser({ id: socket.id, name: username, room, isAdmin });
       
       if (error) {
         console.log(error);
@@ -100,10 +100,14 @@ io.on("connection", (socket) => {
 
       socket.join(user.room);
 
-      addBuzzerState({ room: user.room, pressed: false });
-  
+      addBuzzerState({ room: user.room });
+      
+      const buzzerState = getBuzzerState(user.room);
+
       io.to(user.room).emit('room_update', {
         room: user.room,
+        pressed: buzzerState.pressed,
+        pressed_by: buzzerState.name,
         users: getUsersInRoom(user.room)
       });
       
@@ -119,7 +123,7 @@ io.on("connection", (socket) => {
       if (user) {
         const buzzerState = getBuzzerState(user.room);
         if (buzzerState?.pressed) return;
-        updateBuzzerState({ room: user.room, pressed: true });
+        updateBuzzerState({ room: user.room, pressed: true, name: user.name });
         io.to(user.room).emit('buzzer_was_pressed', user.name);
         console.log(`${user.name} pressed the buzzer in room ${user.room}!`);
       }
@@ -130,7 +134,7 @@ io.on("connection", (socket) => {
 
       if (user && user.isAdmin) {
         io.to(user.room).emit('buzzer_was_freed');
-        updateBuzzerState({ room: user.room, pressed: false });
+        updateBuzzerState({ room: user.room, pressed: false, name: "" });
         console.log("Buzzer freed.");
       }
     });
@@ -159,12 +163,16 @@ io.on("connection", (socket) => {
           console.log(`Last user left room ${user.room}, removing buzzerState entry.`);
           removeBuzzerState(user.room);
           console.log(buzzerStates);
-        }
+        } else {
+          const buzzerState = getBuzzerState(user.room);
 
-        io.to(user.room).emit('room_update', {
-          room: user.room,
-          users: getUsersInRoom(user.room)
-        });
+          io.to(user.room).emit('room_update', {
+            room: user.room,
+            pressed: buzzerState.pressed,
+            pressed_by: buzzerState.name,
+            users: getUsersInRoom(user.room)
+          });
+        }
 
         console.log("User disconnected:")
         console.log(user);
@@ -174,8 +182,7 @@ io.on("connection", (socket) => {
     });
 });
 
-const PORT = 3001;
-server.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+server.listen(process.env.PORT, () => {
+    console.log(`Server is running on http://localhost:${process.env.PORT}`);
 });
 

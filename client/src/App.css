@@ -1,6 +1,12 @@
-body {
-  margin: 0;
+html, body {
+  background-color: rgb(38, 69, 131);
   font-family: Arial, Helvetica, sans-serif;
+  color: whitesmoke;
+  margin: 0;
+}
+
+h1 {
+  margin: 24px;
 }
 
 form {
@@ -12,12 +18,40 @@ form {
 }
 
 .App {
+  box-sizing: border-box;
+  padding-top: 5vh;
   text-align: center;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   min-height: 100vh;
+}
+
+.connectPanel {
+  background-color: rgb(25, 44, 81);
+  padding: 12px;
+  border-radius: 5%;
+}
+
+.connectedUsers {
+  background-color: rgb(25, 44, 81);
+  padding: 12px;
+  border-radius: 5%;
+  margin-top: 16px;
+  margin-bottom: 48px;
+}
+
+h2 {
+  margin: 12px 32px; 
+}
+
+@media only screen and (min-width: 1200px) { 
+  .connectedUsers {
+    position: fixed;
+    left: -16px;
+    top: 25vh;
+    padding-left: 24px;
+  }
 }
 
 input[type="text"] {
@@ -37,7 +71,7 @@ input[type="submit"] {
   font-size: 18px;
   border: none;
   background-color: #365fab;
-  color: #F5F5F5;
+  color: rgb(245, 245, 245);
 }
 
 input[type="submit"]:hover {
@@ -48,17 +82,55 @@ input[type="submit"]:active {
   background-color: #254277;
 }
 
+.adminName {
+  color: rgb(255, 204, 0);
+}
+
 .buzzerButton {
+  background-color: rgb(245, 245, 245);
+  border: 14px solid rgb(194, 194, 194);
+  margin-bottom: 16px;
   padding: 32px;
-  font-size: 68px;
+  font-size: 56px;
   width: 500px;
   height: 500px;
+  color: rgb(34, 34, 75);
+  border-radius: 100%;
+  box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.6);
+}
+
+.buzzerButton:hover:enabled {
+  background-color: rgb(232, 232, 232);
+}
+
+.buzzerButton:active:enabled {
+  background-color: rgb(218, 218, 218);
+  transform: scale(0.99);
+  box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
+}
+
+@media only screen and (max-width: 600px) {
+  .buzzerButton {
+    width: 360px;
+    height: 360px;
+    font-size: 40px;
+  }
+}
+
+.buzzerButton:disabled {
+  color: rgb(50, 50, 112);
 }
 
 .green-bg {
-  background-color: greenyellow;
+  background-color: rgb(111, 227, 102);
+  border: 14px solid rgb(86, 176, 79);
+  transform: scale(0.99);
+  box-shadow: none;
 }
 
 .red-bg {
-  background-color: lightcoral;
+  background-color: rgb(227, 102, 102);
+  border: 14px solid rgb(176, 79, 79);
+  transform: scale(0.99);
+  box-shadow: none;
 }
