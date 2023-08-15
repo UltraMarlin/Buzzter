@@ -15,6 +15,7 @@ function App() {
   const [connectedUsers, setConnectedUsers] = useState([]);
   const [buzzerPressedBy, setBuzzerPressedBy] = useState("");
   const [textField, setTextField] = useState("");
+  const [showAdminPassword, setShowAdminPassword] = useState(false);
 
   const handleBuzzerPress = () => {
     socketRef.current.emit("buzzer_press", { room: connectedRoom, username });
@@ -31,8 +32,13 @@ function App() {
     setConnectedUsers([]);
     setBuzzerPressedBy("");
     setTextField("");
+    setShowAdminPassword(false);
     socketRef.current.emit("leave_room");
   };
+
+  const handleShowPasswordPress = () => {
+    setShowAdminPassword(prev => !prev);
+  }
 
   const connectUserToRoom = () => {
     socketRef.current.emit("connect_to_room", { room: roomID, password: adminPasswort, username });
@@ -80,26 +86,36 @@ function App() {
       
       {connectedRoom ? (
         <>
-          <button className="leaveButton" onClick={handleLeavePress}>Leave Room</button>
-          <h1>Welcome to Room {connectedRoom}, {username}!</h1>
-          <button className={"buzzerButton" + (buzzerPressedBy ? (isMyTurn() ? " green-bg" : " red-bg") : "")} onClick={handleBuzzerPress} disabled={buzzerPressedBy}>
-            {buzzerPressedBy ? `Buzzer pressed\nby ${isMyTurn() ? "you" : buzzerPressedBy}` : "Buzzer ready"}
-          </button>
-          {connectedUsers.find(user => user.name === username.toLowerCase())?.isAdmin && (
-            <button className="freeBuzzerButton" onClick={handleFreeBuzzerPress}>Free Buzzer</button>
-          )}
-          <input type="text" name='textField' placeholder='Answer...' value={textField}
-            onChange={(e) => setTextField(e.target.value)}
-            autoComplete="off"
-          />
-          <div className="connectedUsers">
-            <h2>Connected Users:</h2>
-            {renderActiveUsers()}
+          <div className="midPageControls">
+            <div className="topButtonBar"></div>
+            <button className="leaveButton" onClick={handleLeavePress}>Leave Room</button>
+            <button className={"buzzerButton" + (buzzerPressedBy ? (isMyTurn() ? " green-bg" : " red-bg") : "")} onClick={handleBuzzerPress} disabled={buzzerPressedBy}>
+              {buzzerPressedBy ? `Buzzer pressed\nby ${isMyTurn() ? "you" : buzzerPressedBy}` : "Buzzer ready"}
+            </button>
+            {connectedUsers.find(user => user.name === username.toLowerCase())?.isAdmin && (
+              <>
+                <button className="freeBuzzerButton" onClick={handleFreeBuzzerPress}>Free Buzzer</button>
+                <button className={"showPasswordButon" + (showAdminPassword ? " show-pw" : " hide-pw")} onClick={handleShowPasswordPress}>
+                  {showAdminPassword ? (adminPasswort || "admin") : "Show Password"}
+                </button>
+              </>
+            )}
+            <input type="text" name='textField' placeholder='Answer...' value={textField}
+              onChange={(e) => setTextField(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <div className="roomInfoPanel">
+            <h2>Room {connectedRoom}</h2>
+            <div className="connectedUsers">
+              <h2>Connected Users:</h2>
+              {renderActiveUsers()}
+            </div>
           </div>
         </>
       ) : (
         <div className="connectPanel">
-          <h1>Connect to Room</h1>
+          <h2>Connect to Room</h2>
           <form onSubmit={handleSubmit}>
             <input type="text" name='username' placeholder='Username...' value={username}
               onChange={(e) => setUsername(e.target.value)}
