@@ -85,7 +85,7 @@ function App() {
           <button className={"buzzerButton" + (buzzerPressedBy ? (isMyTurn() ? " green-bg" : " red-bg") : "")} onClick={handleBuzzerPress} disabled={buzzerPressedBy}>
             {buzzerPressedBy ? `Buzzer pressed\nby ${isMyTurn() ? "you" : buzzerPressedBy}` : "Buzzer ready"}
           </button>
-          {connectedUsers.find(user => user.name === username.toLowerCase()).isAdmin && (
+          {connectedUsers.find(user => user.name === username.toLowerCase())?.isAdmin && (
             <button className="freeBuzzerButton" onClick={handleFreeBuzzerPress}>Free Buzzer</button>
           )}
           <input type="text" name='textField' placeholder='Answer...' value={textField}

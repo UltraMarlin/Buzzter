@@ -52,7 +52,7 @@ const getUsersInRoom = room => users.filter(user => user.room === room);
 
 const roomStates = [];
 
-const getRoomState = room => roomStates.find(roomState => roomState.room === room);
+const getRoomState = room => roomStates.find(roomState => roomState.room === room.trim().toLowerCase());
 
 const addRoomState = ({ room, password, pressed=false, name="" }) => {
   room = room.trim().toLowerCase()
