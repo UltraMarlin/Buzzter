@@ -173,6 +173,7 @@ io.on("connection", (socket) => {
       const user = removeUser(socket.id);
     
       if (user) {
+        socket.leave(user.room);
         if (getUsersInRoom(user.room).length == 0) {
           console.log(`Last user left room ${user.room}, removing roomState entry.`);
           removeRoomState(user.room);

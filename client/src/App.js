@@ -25,13 +25,13 @@ function App() {
   };
 
   const handleLeavePress = () => {
-    socketRef.current.emit("leave_room");
     setRoomID("");
     setAdminPasswort("");
     setConnectedRoom(null);
     setConnectedUsers([]);
     setBuzzerPressedBy("");
     setTextField("");
+    socketRef.current.emit("leave_room");
   };
 
   const connectUserToRoom = () => {

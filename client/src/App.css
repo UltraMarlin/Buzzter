@@ -19,7 +19,7 @@ form {
 
 .App {
   box-sizing: border-box;
-  padding-top: 5vh;
+  padding-top: 32px;
   text-align: center;
   display: flex;
   flex-direction: column;
@@ -31,6 +31,7 @@ form {
   background-color: rgb(25, 44, 81);
   padding: 12px;
   border-radius: 5%;
+  margin: 96px 0;
 }
 
 .connectedUsers {
@@ -41,10 +42,6 @@ form {
   margin-bottom: 48px;
 }
 
-h2 {
-  margin: 12px 32px; 
-}
-
 @media only screen and (min-width: 1200px) { 
   .connectedUsers {
     position: fixed;
@@ -52,6 +49,10 @@ h2 {
     top: 25vh;
     padding-left: 24px;
   }
+}
+
+h2 {
+  margin: 12px 32px; 
 }
 
 input[type="text"] {
@@ -86,6 +87,16 @@ input[type="submit"], .freeBuzzerButton {
   border: none;
   background-color: rgb(202, 90, 90);
   color: rgb(245, 245, 245);
+}
+@media only screen and (max-width: 1199px) {
+  .leaveButton {
+    top: 6px;
+    left: 4px;
+    font-size: 16px;
+    height: 38px;
+    width: 128px;
+    padding: 4px 8px;
+  }
 }
 
 .leaveButton:hover {
