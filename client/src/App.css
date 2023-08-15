@@ -63,7 +63,7 @@ input[type="text"] {
   padding-left: 12px;
 }
 
-input[type="submit"] {
+input[type="submit"], .freeBuzzerButton {
   font-family: inherit;
   margin: 16px;
   height: 36px;
@@ -74,11 +74,33 @@ input[type="submit"] {
   color: rgb(245, 245, 245);
 }
 
-input[type="submit"]:hover {
+.leaveButton {
+  font-family: inherit;
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  width: 144px;
+  height: 48px;
+  padding: 4px 12px;
+  font-size: 18px;
+  border: none;
+  background-color: rgb(202, 90, 90);
+  color: rgb(245, 245, 245);
+}
+
+.leaveButton:hover {
+  background-color: rgb(227, 102, 102);
+}
+
+.leaveButton:active {
+  background-color: rgb(176, 79, 79);
+}
+
+input[type="submit"]:hover, .freeBuzzerButton:hover {
   background-color: #4274d1;
 }
 
-input[type="submit"]:active {
+input[type="submit"]:active, .freeBuzzerButton:active {
   background-color: #254277;
 }
 
@@ -87,7 +109,7 @@ input[type="submit"]:active {
 }
 
 .buzzerButton {
-  background-color: rgb(245, 245, 245);
+  background-color: rgb(232, 232, 232);
   border: 14px solid rgb(194, 194, 194);
   margin-bottom: 16px;
   padding: 32px;
@@ -97,15 +119,18 @@ input[type="submit"]:active {
   color: rgb(34, 34, 75);
   border-radius: 100%;
   box-shadow: 6px 6px 14px rgba(0, 0, 0, 0.6);
+  transition: transform 100ms;
 }
 
 .buzzerButton:hover:enabled {
-  background-color: rgb(232, 232, 232);
+  background-color: rgb(245, 245, 245);
+  transition: transform 100ms;
 }
 
 .buzzerButton:active:enabled {
   background-color: rgb(218, 218, 218);
   transform: scale(0.99);
+  transition: transform 100ms;
   box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.8);
 }
 

@@ -16,8 +16,6 @@ const io = new Server(server, {
     },
 });
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET;
-
 const users = [];
 
 const addUser = ({ id, name, room, isAdmin }) => {
@@ -52,47 +50,51 @@ const getUser = id => users.find(user => user.id === id);
 
 const getUsersInRoom = room => users.filter(user => user.room === room);
 
-const buzzerStates = [];
+const roomStates = [];
 
-const getBuzzerState = room => buzzerStates.find(buzzerState => buzzerState.room === room);
+const getRoomState = room => roomStates.find(roomState => roomState.room === room);
 
-const addBuzzerState = ({ room, pressed=false, name="" }) => {
-  if (getBuzzerState(room)) return { error: 'Room already initialized.' };
+const addRoomState = ({ room, password, pressed=false, name="" }) => {
+  room = room.trim().toLowerCase()
+  if (getRoomState(room)) return { roomError: 'Room already initialized.' };
 
-  const buzzerState = { room, pressed, name };
+  password = password.trim();
+  const roomState = { room, password, pressed, name };
 
-  buzzerStates.push(buzzerState);
+  roomStates.push(roomState);
+
+  return { roomState };
 }
 
 const updateBuzzerState = ({ room, pressed, name }) => {
-  if (!getBuzzerState(room)) {
-    addBuzzerState({room, pressed, name});
+  if (!getRoomState(room)) {
     return;
   }
 
-  let buzzerState = removeBuzzerState(room);
-  buzzerState.pressed = pressed;
-  buzzerState.name = name;
+  let roomState = removeRoomState(room);
+  roomState.pressed = pressed;
+  roomState.name = name;
 
-  addBuzzerState(buzzerState);
+  addRoomState(roomState);
 
-  console.log(buzzerStates);
+  console.log(roomStates);
 
-  return { buzzerState };
+  return { roomState };
 }
 
-const removeBuzzerState = room => {
-  const index = buzzerStates.findIndex(buzzerState => buzzerState.room === room);
-  if (index !== -1) return buzzerStates.splice(index, 1)[0];
+const removeRoomState = room => {
+  const index = roomStates.findIndex(roomState => roomState.room === room);
+  if (index !== -1) return roomStates.splice(index, 1)[0];
 }
 
 io.on("connection", (socket) => {
     console.log(`User Connected: ${socket.id}`);
 
-    socket.on('connect_to_room', ({ room, username, secret = "_" }) => {
-      const isAdmin = secret === ADMIN_SECRET;
+    socket.on('connect_to_room', ({ room, password, username }) => {
+      const existingRoomState = getRoomState(room);
+      const isAdmin = !existingRoomState || (existingRoomState && existingRoomState.password === password);
       const { error, user } = addUser({ id: socket.id, name: username, room, isAdmin });
-      
+
       if (error) {
         console.log(error);
         return;
@@ -100,29 +102,41 @@ io.on("connection", (socket) => {
 
       socket.join(user.room);
 
-      addBuzzerState({ room: user.room });
-      
-      const buzzerState = getBuzzerState(user.room);
+      if (!existingRoomState) {
+        password = password ? password : "admin";
+        const { roomError, roomState } = addRoomState({ room: room, password });
 
-      io.to(user.room).emit('room_update', {
-        room: user.room,
-        pressed: buzzerState.pressed,
-        pressed_by: buzzerState.name,
-        users: getUsersInRoom(user.room)
-      });
-      
+        if (roomError) {
+          console.log(roomError);
+          return;
+        }
+
+        io.to(user.room).emit('room_update', {
+          room: user.room,
+          pressed: roomState.pressed,
+          pressed_by: roomState.name,
+          users: getUsersInRoom(user.room)
+        });
+      } else {
+
+        io.to(user.room).emit('room_update', {
+          room: user.room,
+          pressed: existingRoomState.pressed,
+          pressed_by: existingRoomState.name,
+          users: getUsersInRoom(user.room)
+        });
+      }
+
       console.log("User connected:")
       console.log(user);
-      console.log("All users in room:");
-      console.log(getUsersInRoom(user.room));
     });
 
     socket.on('buzzer_press', () => {
       const user = getUser(socket.id);
 
       if (user) {
-        const buzzerState = getBuzzerState(user.room);
-        if (buzzerState?.pressed) return;
+        const roomState = getRoomState(user.room);
+        if (roomState?.pressed) return;
         updateBuzzerState({ room: user.room, pressed: true, name: user.name });
         io.to(user.room).emit('buzzer_was_pressed', user.name);
         console.log(`${user.name} pressed the buzzer in room ${user.room}!`);
@@ -155,21 +169,21 @@ io.on("connection", (socket) => {
       }
     });
 
-    socket.on('disconnect', () => {
+    const leave_room = () => { 
       const user = removeUser(socket.id);
     
       if (user) {
         if (getUsersInRoom(user.room).length == 0) {
-          console.log(`Last user left room ${user.room}, removing buzzerState entry.`);
-          removeBuzzerState(user.room);
-          console.log(buzzerStates);
+          console.log(`Last user left room ${user.room}, removing roomState entry.`);
+          removeRoomState(user.room);
+          console.log(roomStates);
         } else {
-          const buzzerState = getBuzzerState(user.room);
+          const roomState = getRoomState(user.room);
 
           io.to(user.room).emit('room_update', {
             room: user.room,
-            pressed: buzzerState.pressed,
-            pressed_by: buzzerState.name,
+            pressed: roomState.pressed,
+            pressed_by: roomState.name,
             users: getUsersInRoom(user.room)
           });
         }
@@ -179,6 +193,14 @@ io.on("connection", (socket) => {
         console.log("All users in room:");
         console.log(getUsersInRoom(user.room));
       }
+    };
+
+    socket.on('leave_room', () => {
+      leave_room();
+    });
+
+    socket.on('disconnect', () => {
+      leave_room();
     });
 });
 
