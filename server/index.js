@@ -20,7 +20,7 @@ const users = [];
 
 const addUser = ({ id, name, room, isAdmin }) => {
   name = name.trim().toLowerCase();
-  room = room.trim().toLowerCase();
+  room = room.trim().toUpperCase();
 
   const existingUser = users.find(
     user => user.room === room && user.name === name
@@ -52,10 +52,10 @@ const getUsersInRoom = room => users.filter(user => user.room === room);
 
 const roomStates = [];
 
-const getRoomState = room => roomStates.find(roomState => roomState.room === room.trim().toLowerCase());
+const getRoomState = room => roomStates.find(roomState => roomState.room === room.trim().toUpperCase());
 
 const addRoomState = ({ room, password, pressed=false, name="" }) => {
-  room = room.trim().toLowerCase()
+  room = room.trim().toUpperCase();
   if (getRoomState(room)) return { roomError: 'Room already initialized.' };
 
   password = password.trim();
