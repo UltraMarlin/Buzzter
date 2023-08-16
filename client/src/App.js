@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 
 import socketIOClient from 'socket.io-client';
 
-const ENDPOINT = process.env.NODE_ENV === 'production' ? 'https://buzzter.weekofcharity.de' : 'http://localhost:3001';
+const ENDPOINT = process.env.NODE_ENV === 'production' ? 'https://buzzter.weekofcharity.de:3257' : 'http://localhost:3001';
 
 function App() {
   const socketRef = useRef();
