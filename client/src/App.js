@@ -125,7 +125,7 @@ function App() {
               onChange={(e) => setRoomID(e.target.value)}
               autoComplete="off"
             />
-            <input type="text" name='adminPasswort' placeholder='Admin Passwort...' value={adminPasswort}
+            <input type="text" name='adminPasswort' placeholder='Admin Password...' value={adminPasswort}
               onChange={(e) => setAdminPasswort(e.target.value)}
               autoComplete="off"
             />
