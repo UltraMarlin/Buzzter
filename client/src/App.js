@@ -27,11 +27,8 @@ function App() {
   };
 
   const handleKeyDown = useCallback((e) => {
-    if (e.target.tagName === "INPUT") {
-      return;
-    }
-    e.preventDefault();
-    if (e.key === " ") {
+    if (e.key === " " && e.target.tagName !== "INPUT") {
+      e.preventDefault();
       handleBuzzerPress();
     }
   }, [handleBuzzerPress]);
