@@ -1,6 +1,6 @@
 import './App.css';
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 import socketIOClient from 'socket.io-client';
 
@@ -17,13 +17,24 @@ function App() {
   const [textField, setTextField] = useState("");
   const [showAdminPassword, setShowAdminPassword] = useState(false);
 
-  const handleBuzzerPress = () => {
-    socketRef.current.emit("buzzer_press", { room: connectedRoom, username });
-  };
+  const handleBuzzerPress = useCallback(() => {
+    if (!connectedRoom || buzzerPressedBy) return;
+    socketRef.current.emit("buzzer_press", { room: connectedRoom, username: username });
+  }, [buzzerPressedBy, connectedRoom, username]);
 
   const handleFreeBuzzerPress = () => {
     socketRef.current.emit("free_buzzer");
   };
+
+  const handleKeyDown = useCallback((e) => {
+    if (e.target.tagName === "INPUT") {
+      return;
+    }
+    e.preventDefault();
+    if (e.key === " ") {
+      handleBuzzerPress();
+    }
+  }, [handleBuzzerPress]);
 
   const handleLeavePress = () => {
     setRoomID("");
@@ -40,17 +51,13 @@ function App() {
     setShowAdminPassword(prev => !prev);
   }
 
-  const connectUserToRoom = () => {
-    socketRef.current.emit("connect_to_room", { room: roomID, password: adminPasswort, username });
-  };
-
   const isMyTurn = () => {
     return buzzerPressedBy === username.toLowerCase();
   };
 
-  const handleSubmit = (e) => {
+  const handleConnectSubmit = (e) => {
     e.preventDefault();
-    connectUserToRoom();
+    socketRef.current.emit("connect_to_room", { room: roomID, password: adminPasswort, username });
   };
 
   useEffect(() => {
@@ -74,6 +81,14 @@ function App() {
       setBuzzerPressedBy("");
     });
   }, []);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [handleKeyDown]);
 
   const renderActiveUsers = () => {
     return connectedUsers.map(user => {
@@ -116,7 +131,7 @@ function App() {
       ) : (
         <div className="connectPanel">
           <h2>Connect to Room</h2>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleConnectSubmit}>
             <input type="text" name='username' placeholder='Username...' value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="off"
